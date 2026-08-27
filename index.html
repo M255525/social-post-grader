@@ -967,6 +967,7 @@
         await new Promise(function(r){ setTimeout(r, waitSec * 1000); });
         continue;
       }
+      if(resp.status === 401 || resp.status === 403) msg += '——這通常表示 API 金鑰不正確、已失效，或貼的金鑰跟選的服務商不對應，請確認金鑰是否貼對';
       if(resp.status === 404) msg += '——這通常表示模型名稱錯誤或已停用，請確認目前可用的模型 ID';
       if(RETRYABLE[resp.status]) msg += '——已自動重試 ' + (MAX_TRIES - 1) + ' 次仍失敗，多為服務商暫時過載，請稍候再試或更換模型／服務商';
       throw new Error('API 回應 ' + resp.status + '：' + msg);
