@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作手冊 · 社群貼文健診站</title>
+<style>
+  :root{
+    --bg:#0a141f; --bg-alt:#0e1c29; --panel:#132433; --panel-raised:#182e40;
+    --line:#26404f; --line-soft:#1b2f3d; --text:#eaf4f2; --text-dim:#93b0ae; --text-faint:#5d7b7a;
+    --cyan:#22d3c7; --cyan-glow:rgba(34,211,199,0.5); --red:#e0566a;
+    --font-mono:ui-monospace,"Cascadia Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    --font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);line-height:1.75;}
+  a{color:var(--cyan);}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 24px;
+    border-bottom:1px solid var(--line-soft);background:var(--bg-alt);position:sticky;top:0;z-index:10;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan-glow);}
+  .topbar a.back{
+    font-family:var(--font-mono);font-size:13px;color:var(--text-dim);text-decoration:none;
+    border:1px solid var(--line);padding:7px 14px;border-radius:6px;
+  }
+  .topbar a.back:hover{color:var(--cyan);border-color:var(--cyan);}
+  main{max-width:760px;margin:0 auto;padding:44px 24px 80px;}
+  h1{font-size:30px;margin:0 0 8px;}
+  .sub{color:var(--text-dim);margin:0 0 36px;}
+  .card{
+    background:linear-gradient(180deg,var(--panel-raised),var(--panel));
+    border:1px solid var(--line);border-radius:10px;padding:22px 24px;margin-bottom:20px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .card h2{font-size:19px;margin:0 0 14px;color:var(--cyan);}
+  .card h3{font-size:15px;margin:18px 0 8px;color:var(--text);}
+  .card p, .card li{color:var(--text-dim);font-size:14.5px;}
+  .card ul, .card ol{padding-left:20px;margin:8px 0;}
+  .tip{
+    background:rgba(34,211,199,0.08);border:1px solid rgba(34,211,199,0.3);
+    border-radius:8px;padding:12px 16px;font-size:13.5px;color:var(--text-dim);margin-top:12px;
+  }
+  .warn{
+    background:rgba(224,86,106,0.08);border:1px solid rgba(224,86,106,0.35);
+    border-radius:8px;padding:14px 16px;font-size:13.5px;color:var(--text-dim);
+  }
+  .warn strong{color:var(--red);}
+  code{background:var(--bg-alt);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:13px;}
+  footer{border-top:1px solid var(--line-soft);background:var(--bg-alt);padding:24px;text-align:center;font-size:12.5px;color:var(--text-faint);font-family:var(--font-mono);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span><strong>社群貼文健診站</strong></div>
+  <a class="back" href="index.html">← 回到健診站</a>
+</div>
+
+<main>
+  <h1>操作手冊</h1>
+  <p class="sub">社群貼文健診站針對你貼上的貼文文字，依 8 個維度給出評分、說明與改善建議，最後產生一份「改善後貼文」。沒有 API 金鑰也能使用規則式引擎完成基礎健診，填入 API 金鑰則能取得更精準的語意層評分與改寫。</p>
+
+  <div class="card">
+    <h2>操作步驟</h2>
+    <ol>
+      <li>選擇「目標平台」（Facebook／Instagram／X／Threads／通用），這會影響字數建議、hashtag 數量與演算法重點的評分標準</li>
+      <li>把要健診的貼文全文（含 hashtag）貼到「貼文原文」欄位，或點選下方 5 組範例快速體驗（範例涵蓋不同品質程度，皆為虛構情境）</li>
+      <li>選填：填寫「貼文目的」與「目標受眾」，可讓「語氣與受眾契合度」這個維度評分更精準</li>
+      <li>選用：展開「AI 深度健診設定」，選擇服務商並填入你自己的 API 金鑰，取得語意層的深度評分與改寫；不填金鑰也能使用規則式引擎完成基礎健診（字數／CTA／hashtag／濫用字詞偵測等）</li>
+      <li>按「🩺 開始健診」，下方會出現總分健檢儀表、8 張維度卡片，以及一份可編輯、可複製的「改善後貼文」處方箋</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>8 個評量維度</h2>
+    <ul>
+      <li><strong>開頭吸引力</strong>：前幾秒能不能抓住讀者的注意力</li>
+      <li><strong>核心訊息清晰度</strong>：讀完能不能一句話講出這篇在說什麼</li>
+      <li><strong>語氣與受眾契合度</strong>：用詞語氣是否符合宣告的目的與受眾</li>
+      <li><strong>CTA明確度</strong>：有沒有具體可執行的行動呼籲</li>
+      <li><strong>長度與排版易讀性</strong>：字數與分段是否符合平台的閱讀習慣</li>
+      <li><strong>Hashtag使用</strong>：數量與相關性是否恰當</li>
+      <li><strong>情感共鳴／故事性</strong>：是資訊條列還是有畫面感的故事</li>
+      <li><strong>演算法友善度</strong>：有沒有過度促銷或誘導互動的訊號，可能被平台降低觸及</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>AI 深度健診設定（選用，需自備 API 金鑰）</h2>
+    <p>「開始健診」預設會使用本機規則式引擎（字數/CTA/hashtag/濫用字詞等基礎檢查，不連網），效果陽春但完全免費。若想要更精準的語意層評分與改寫，可以自己接上語言模型：</p>
+    <ol>
+      <li>展開「AI 深度健診設定」，選擇服務商（Claude／OpenAI／Gemini／OpenRouter）；模型欄已列出幾個常用模型可直接選用，也可選「✏️ 自訂模型名稱」自行輸入其他模型 ID</li>
+      <li>填入你自己申請的 API 金鑰</li>
+      <li>按「開始健診」時，若金鑰有填就會自動改用 AI 評分與改寫；若某個維度的 AI 結果解析失敗，該維度會自動退回規則式評分，並在健診報告下方提示</li>
+    </ol>
+    <div class="tip">API 金鑰只存在你這台電腦的瀏覽器（localStorage），使用時依你與該服務商的方案計費，本工具不會向你收費，也不會經手你的金鑰。</div>
+  </div>
+
+  <div class="card">
+    <h2>平台規則說明</h2>
+    <ul>
+      <li><strong>Facebook</strong>：建議 400-600 字，語氣親切、鼓勵留言互動，hashtag 1-2 個</li>
+      <li><strong>Instagram</strong>：建議 150-300 字，開頭要抓眼球，hashtag 8-15 個</li>
+      <li><strong>X（Twitter）</strong>：硬性上限 280 字，簡短有力，hashtag 1-2 個</li>
+      <li><strong>Threads</strong>：上限 500 字，語氣輕鬆對話感，hashtag 2-4 個</li>
+      <li><strong>通用</strong>：未指定特定平台時的中性寬鬆標準，建議 150-400 字，hashtag 3-6 個</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>隱私說明</h2>
+    <ul>
+      <li>貼文原文、平台選擇、目的與受眾會存在瀏覽器 localStorage（草稿），關閉分頁後下次打開仍會保留，但不會傳送到任何伺服器</li>
+      <li>AI API 金鑰只存在瀏覽器 localStorage，換一台電腦或清除瀏覽器資料就會不見</li>
+      <li>按「開始健診」若填有 API 金鑰，貼文內容會直接連線送到你選擇的服務商官方 API，不會經過本工具作者或任何第三方伺服器</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>使用警語</h2>
+    <div class="warn">
+      <strong>請注意：</strong>
+      <ul>
+        <li>本工具的規則式引擎完全不連網；只有填入 API 金鑰並按下「開始健診」時才會對外連線</li>
+        <li>請勿在任何欄位輸入真實個資、公司機密、他人受著作權保護的內容，或不希望被 AI 服務留存的敏感資訊</li>
+        <li>健診結果（含分數、說明與改善版貼文）皆為參考建議，不保證絕對正確或適用於所有情境，發布前請自行判斷</li>
+        <li>使用 AI 健診功能所產生的 API 費用由你與所選服務商的方案自行負擔，本工具不會向你收費</li>
+        <li>僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>創作者資料</h2>
+    <p><strong>Mark Tsai（蔡豐全）</strong></p>
+    <p>聯絡信箱：<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a></p>
+
+    <h3>專長</h3>
+    <p>銷售數據分析、AI 工具運用、政府補助計畫申請、創業、跨境電商</p>
+
+    <h3>證照</h3>
+    <ul>
+      <li>青創總會 創業輔導顧問師班（2013）</li>
+      <li>青創總會 網路行銷講師培訓班（2014）</li>
+      <li>阿里巴巴 P4P 認證講師（2016）</li>
+      <li>iCap 訓練規劃與評量職能基準課程（2017）</li>
+      <li>iCap 職能導向課程申請認證實作班（2023）</li>
+      <li>iPAS AI 應用規劃師－初級（2025）</li>
+      <li>新北市社會局社區數位陪伴員（2025）</li>
+    </ul>
+
+    <h3>經歷</h3>
+    <ul>
+      <li>勞動力發展署桃竹苗分署 創業顧問（2017－迄今）</li>
+      <li>勞動力發展署（北北基）小型企業人力提升計畫 顧問（2019－迄今）</li>
+      <li>勞動力發展署（桃竹苗）小型企業人力提升計畫 顧問（2019－迄今）</li>
+      <li>農業部農業科技司「科技農企業雙軸轉型躍升發展」科技計畫 業師（2025－2026）</li>
+      <li>勞動力發展署 企業人力資源提升計畫 審查委員（2024）</li>
+      <li>勞動力發展署 職前訓練評鑑計畫 委員（2022）</li>
+      <li>勞動部桃竹苗分署－桃竹苗區域運籌人力資源整合服務計畫 顧問（2022－2023）</li>
+      <li>經濟部中小企業處 SBIR 海選專案 評審委員（2019－2024）</li>
+      <li>勞動力發展署 數位學習課程清單審查會議 審查委員（2024－2025）</li>
+      <li>輔仁大學創新跨領域學院 課務委員（2024－2025）</li>
+      <li>台北市進出口商業同業公會 跨境電商生態村 顧問</li>
+      <li>台灣網商協會 顧問</li>
+      <li>中華職能開發策進會 顧問（2018－2020）</li>
+      <li>新北市汽車美容人員職業工會 顧問（2023－迄今）</li>
+      <li>中華網路行銷講師協會 顧問（2022－迄今）</li>
+      <li>新北市社企電商基地 輔導顧問（2018－2020）</li>
+      <li>阿里巴巴國際站平台 認證講師（2016）</li>
+      <li>巨匠電腦 跨境電子商務班 講師（2016－2017）</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>授權與使用限制</h2>
+    <p>本工具僅供<strong>教學、課程及個人使用</strong>，禁止未經授權公開發布、販售或商業化使用。如需其他用途，請先取得創作者授權。</p>
+  </div>
+
+</main>
+
+<footer>
+  製作：Mark Tsai｜<a href="index.html">回到健診站</a>
+</footer>
+
+</body>
+</html>

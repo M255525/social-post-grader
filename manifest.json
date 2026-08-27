@@ -1,0 +1,16 @@
+{
+  "name": "社群貼文健診站",
+  "short_name": "貼文健診",
+  "description": "貼上社群貼文文字，8 個維度評分並附說明與建議，產生一份改善後的貼文",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a141f",
+  "theme_color": "#22d3c7",
+  "lang": "zh-TW",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社群貼文健診站 · Post Grader</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#22d3c7">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="貼文健診站">
+<style>
+  :root{
+    --bg:#0a141f;
+    --bg-alt:#0e1c29;
+    --panel:#132433;
+    --panel-raised:#182e40;
+    --line:#26404f;
+    --line-soft:#1b2f3d;
+    --text:#eaf4f2;
+    --text-dim:#93b0ae;
+    --text-faint:#5d7b7a;
+    --cyan:#22d3c7;
+    --cyan-soft:rgba(34,211,199,0.14);
+    --cyan-glow:rgba(34,211,199,0.5);
+    --green:#3ddc84;
+    --amber:#e8a33d;
+    --red:#e0566a;
+    --fb:#1877F2;
+    --ig1:#f58529; --ig2:#dd2a7b; --ig3:#8134af;
+    --x:#e8e9f0;
+    --th:#e8e9f0;
+    --font-mono:ui-monospace,"Cascadia Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    --font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);
+    background-image:
+      radial-gradient(circle at 12% 0%, rgba(34,211,199,0.08), transparent 45%),
+      radial-gradient(circle at 92% 10%, rgba(61,220,132,0.05), transparent 40%);
+    color:var(--text);font-family:var(--font-sans);line-height:1.6;min-height:100vh;
+  }
+  a{color:var(--cyan);}
+  ::selection{background:var(--cyan);color:#06201d;}
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+
+  #marqueeBar{position:fixed;top:0;left:0;right:0;height:30px;background:var(--panel);border-bottom:1px solid var(--line-soft);z-index:2100;overflow:hidden;display:none;align-items:center}
+  #marqueeBar.show{display:flex}
+  #marqueeTrack{display:inline-block;white-space:nowrap;padding-left:100%;font-size:13px;font-weight:600;color:var(--cyan);animation:marquee-scroll 30s linear infinite}
+  body.has-marquee{padding-top:30px}
+  body.has-marquee .topbar{top:30px}
+  @keyframes marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 24px;
+    border-bottom:1px solid var(--line-soft);
+    background:linear-gradient(180deg, var(--bg-alt), var(--bg));
+    position:sticky;top:0;z-index:20;backdrop-filter:blur(6px);transition:top .15s;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);letter-spacing:.04em;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan-glow);}
+  .brand strong{font-size:15px;font-weight:700;}
+  .topbar nav a{
+    font-family:var(--font-mono);font-size:13px;color:var(--text-dim);text-decoration:none;
+    border:1px solid var(--line);padding:7px 14px;border-radius:6px;transition:.15s;
+  }
+  .topbar nav a:hover{color:var(--cyan);border-color:var(--cyan);}
+
+  .hero{
+    padding:52px 24px 34px;text-align:center;
+    background:linear-gradient(180deg, var(--bg-alt), var(--bg));
+    border-bottom:1px solid var(--line-soft);
+  }
+  .hero .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.3em;color:var(--text-faint);text-transform:uppercase;margin-bottom:14px;}
+  .hero h1{font-size:clamp(26px,4.6vw,40px);margin:0 0 12px;font-weight:800;letter-spacing:-0.01em;}
+  .hero h1 .accent{color:var(--cyan);}
+  .hero p.lead{max-width:620px;margin:0 auto;color:var(--text-dim);font-size:15.5px;}
+
+  main{max-width:960px;margin:0 auto;padding:40px 24px 80px;}
+  .btn{
+    font-family:var(--font-mono);font-size:13px;letter-spacing:.03em;
+    background:var(--panel-raised);color:var(--text);border:1px solid var(--line);
+    padding:9px 16px;border-radius:6px;cursor:pointer;transition:.15s;
+  }
+  .btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .btn.primary{background:var(--cyan);color:#06201d;border-color:var(--cyan);font-weight:700;}
+  .btn.primary:hover{background:#4de0d5;color:#06201d;box-shadow:0 0 16px var(--cyan-glow);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn:disabled:hover{border-color:var(--line);color:var(--text);}
+
+  .card{
+    position:relative;overflow:hidden;
+    background:linear-gradient(180deg, var(--panel-raised), var(--panel));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px 24px;margin-bottom:22px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.25);
+  }
+  .card.scanning::after{
+    content:'';position:absolute;left:0;right:0;top:0;height:3px;
+    background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+    animation:scan 1.1s linear infinite;
+  }
+  @keyframes scan{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  .card h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:9px;}
+  .card h2 .num{
+    font-family:var(--font-mono);font-size:12px;color:var(--cyan);border:1px solid var(--line);
+    border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+    background:var(--bg-alt);flex-shrink:0;
+  }
+  .card .hint{font-size:13px;color:var(--text-dim);margin:8px 0 14px;}
+
+  label.field-label{display:block;font-family:var(--font-mono);font-size:12px;color:var(--text-faint);letter-spacing:.05em;margin-bottom:6px;}
+  textarea, select, input[type=text], input[type=password]{
+    width:100%;background:var(--bg-alt);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:11px 13px;font-family:var(--font-sans);font-size:14.5px;line-height:1.65;
+  }
+  textarea{resize:vertical;min-height:150px;}
+  textarea::placeholder, input::placeholder{color:var(--text-faint);}
+  textarea:focus, select:focus, input:focus{border-color:var(--cyan);}
+
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;}
+  .row > div{flex:1;min-width:180px;}
+
+  .platform-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .platform-pill{
+    font-family:var(--font-mono);font-size:12.5px;display:flex;align-items:center;gap:7px;
+    background:var(--bg-alt);color:var(--text-dim);border:1px solid var(--line);
+    padding:8px 14px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .platform-pill .swatch{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .platform-pill[data-platform="facebook"] .swatch{background:var(--fb);}
+  .platform-pill[data-platform="instagram"] .swatch{background:linear-gradient(135deg,var(--ig1),var(--ig2),var(--ig3));}
+  .platform-pill[data-platform="x"] .swatch{background:var(--x);}
+  .platform-pill[data-platform="threads"] .swatch{background:var(--th);}
+  .platform-pill[data-platform="general"] .swatch{background:var(--cyan);}
+  .platform-pill:hover{border-color:var(--cyan);color:var(--cyan);}
+  .platform-pill.active{border-color:var(--cyan);background:var(--cyan-soft);color:var(--text);box-shadow:0 0 0 1px var(--cyan-soft);}
+
+  .char-hint{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);margin-top:8px;}
+  .char-hint.over{color:var(--red);}
+
+  .example-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .example-btn{
+    font-family:var(--font-sans);font-size:12.5px;
+    background:var(--bg-alt);color:var(--text-dim);border:1px solid var(--line);
+    padding:7px 13px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .example-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+  details.api-settings{
+    margin-top:14px;border:1px solid var(--line-soft);border-radius:8px;padding:2px 14px;background:var(--bg-alt);
+  }
+  details.api-settings summary{cursor:pointer;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:10px 0;letter-spacing:.03em;}
+  details.api-settings[open] summary{color:var(--cyan);}
+  .api-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 12px;}
+  .api-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-faint);font-family:var(--font-mono);}
+  .api-grid label.full{grid-column:1/-1;}
+  .api-note{font-size:12px;color:var(--text-faint);margin:0 0 12px;line-height:1.6;}
+
+  .eval-report{font-size:13px;color:var(--text-dim);margin-top:12px;line-height:1.75;}
+  .eval-report .ok{color:var(--green);}
+  .eval-report .bad{color:var(--red);}
+  .eval-report .warn{color:var(--amber);}
+
+  /* ---- 結果區：健診儀表 ---- */
+  .score-hero{display:flex;align-items:center;gap:28px;flex-wrap:wrap;margin-bottom:20px;}
+  .gauge-wrap{position:relative;width:140px;height:140px;flex-shrink:0;}
+  .gauge-svg{width:140px;height:140px;transform:rotate(-90deg);}
+  .gauge-track{fill:none;stroke:var(--line);stroke-width:10;}
+  .gauge-fill{fill:none;stroke:var(--cyan);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .8s ease, stroke .3s ease;}
+  .gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .gauge-score{font-family:var(--font-mono);font-size:32px;font-weight:800;line-height:1;}
+  .gauge-grade{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);margin-top:4px;letter-spacing:.06em;padding:2px 10px;border-radius:999px;border:1px solid var(--line);}
+  .score-summary{flex:1;min-width:220px;}
+  .summary-label{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;}
+  .summary-text{font-size:14.5px;color:var(--text);margin:0;}
+
+  .grade-a{color:var(--green);border-color:var(--green);}
+  .grade-b{color:var(--cyan);border-color:var(--cyan);}
+  .grade-c{color:var(--amber);border-color:var(--amber);}
+  .grade-d{color:var(--red);border-color:var(--red);}
+
+  .dim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:22px;}
+  .dim-card{background:var(--bg-alt);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .dim-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .dim-title{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;}
+  .dim-icon{font-size:15px;}
+  .dim-score{font-family:var(--font-mono);font-size:15px;font-weight:800;}
+  .dim-bar-track{height:6px;border-radius:99px;background:var(--line-soft);overflow:hidden;margin-bottom:10px;}
+  .dim-bar-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+  .dim-comment{font-size:12.5px;color:var(--text-dim);margin:0 0 6px;line-height:1.6;}
+  .dim-suggestion{font-size:12.5px;color:var(--cyan);margin:0;line-height:1.6;}
+  .dim-suggestion::before{content:'💡 ';}
+  .dim-card[data-source="rule"] .dim-head::after{content:'規則式';font-family:var(--font-mono);font-size:10px;color:var(--text-faint);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-left:auto;}
+
+  .rx-card{background:var(--bg-alt);border:1px solid var(--line-soft);border-radius:10px;padding:18px 20px;}
+  .rx-card h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px;}
+  .rx-textarea{min-height:180px;font-size:14.5px;}
+  .result-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+  .rx-rationale{margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);}
+  .rx-rationale ul{margin:0;padding-left:20px;font-size:13px;color:var(--text-dim);line-height:1.85;}
+  .warn-banner{
+    background:rgba(232,163,61,0.08);border:1px solid rgba(232,163,61,0.35);border-radius:8px;
+    padding:10px 14px;font-size:12.5px;color:var(--text-dim);margin-bottom:18px;
+  }
+  .warn-banner strong{color:var(--amber);}
+
+  footer{border-top:1px solid var(--line-soft);background:var(--bg-alt);padding:32px 24px 40px;}
+  .warn-box{
+    max-width:960px;margin:0 auto 22px;background:rgba(224,86,106,0.08);border:1px solid rgba(224,86,106,0.35);
+    border-radius:8px;padding:16px 18px;font-size:13px;color:var(--text-dim);
+  }
+  .warn-box strong{color:var(--red);}
+  .warn-box ul{margin:8px 0 0;padding-left:20px;}
+  .creator-box{
+    max-width:960px;margin:0 auto 22px;background:rgba(34,211,199,0.05);border:1px solid rgba(34,211,199,0.25);
+    border-radius:8px;padding:16px 18px;font-size:13px;color:var(--text-dim);line-height:1.75;
+  }
+  .creator-box h3{color:var(--cyan);margin:0 0 8px;font-size:15px;}
+  .creator-box p{margin:4px 0;}
+  .footer-meta{
+    max-width:960px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    font-size:12.5px;color:var(--text-faint);font-family:var(--font-mono);
+  }
+  .footer-meta a{color:var(--text-dim);}
+  .footer-link-btn{
+    background:none;border:1px solid var(--line-soft);color:var(--text-dim);
+    font-family:var(--font-mono);font-size:12.5px;padding:4px 10px;border-radius:6px;cursor:pointer;
+  }
+  .footer-link-btn:hover{border-color:var(--cyan);color:var(--text);}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-raised);border:1px solid var(--cyan);color:var(--text);
+    padding:10px 20px;border-radius:8px;font-size:13px;font-family:var(--font-mono);
+    opacity:0;pointer-events:none;transition:.25s;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:640px){
+    .api-grid{grid-template-columns:1fr;}
+    .row{flex-direction:column;}
+    .score-hero{flex-direction:column;text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<div id="marqueeBar"><div id="marqueeTrack"></div></div>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span><strong>社群貼文健診站</strong></div>
+  <nav><a href="manual.html">操作手冊</a></nav>
+</div>
+
+<div class="hero">
+  <div class="eyebrow">FACEBOOK · INSTAGRAM · X · THREADS · 通用</div>
+  <h1>貼上你的貼文，<span class="accent">立即健診</span></h1>
+  <p class="lead">8 個維度逐一評分並附說明與建議，最後開出一份「改善後貼文」處方箋——沒有 API 金鑰也能用規則式引擎完成基礎健診。</p>
+</div>
+
+<main>
+
+  <div class="card" id="inputCard">
+    <h2><span class="num">1</span>貼上貼文，選擇平台</h2>
+    <p class="hint">目標平台會影響字數建議、hashtag 數量與演算法重點的評分標準。</p>
+
+    <label class="field-label">目標平台</label>
+    <div class="platform-pills" id="platformPills">
+      <button type="button" class="platform-pill" data-platform="facebook"><span class="swatch"></span>Facebook</button>
+      <button type="button" class="platform-pill" data-platform="instagram"><span class="swatch"></span>Instagram</button>
+      <button type="button" class="platform-pill" data-platform="x"><span class="swatch"></span>X（Twitter）</button>
+      <button type="button" class="platform-pill" data-platform="threads"><span class="swatch"></span>Threads</button>
+      <button type="button" class="platform-pill" data-platform="general"><span class="swatch"></span>通用</button>
+    </div>
+
+    <label class="field-label" for="postInput" style="margin-top:16px;">貼文原文</label>
+    <textarea id="postInput" placeholder="貼上你想健診的貼文全文（含 hashtag）……"></textarea>
+    <div class="char-hint" id="charHint"></div>
+
+    <label class="field-label" style="margin-top:14px;">範例（點一下直接帶入，皆為虛構情境，涵蓋不同品質程度）</label>
+    <div class="example-row" id="exampleRow"></div>
+
+    <div class="row">
+      <div>
+        <label class="field-label" for="purposeSelect">貼文目的（選填）</label>
+        <select id="purposeSelect">
+          <option value="">未指定</option>
+          <option value="conversion">促購導購</option>
+          <option value="awareness">品牌曝光</option>
+          <option value="engagement">互動增粉</option>
+          <option value="event">活動宣傳</option>
+          <option value="announcement">公告通知</option>
+          <option value="education">教育科普</option>
+          <option value="trust">建立信任／口碑</option>
+          <option value="custom">✏️ 自訂目的…</option>
+        </select>
+        <input type="text" id="purposeCustomInput" placeholder="例：邀請大家留言分享自己的故事" style="display:none;margin-top:8px;">
+      </div>
+      <div>
+        <label class="field-label" for="audienceSelect">目標受眾（選填）</label>
+        <select id="audienceSelect">
+          <option value="">未指定</option>
+          <option value="年輕上班族">年輕上班族</option>
+          <option value="學生族群">學生族群</option>
+          <option value="親子家庭">親子家庭</option>
+          <option value="樂齡銀髮族">樂齡銀髮族</option>
+          <option value="精打細算的省錢族">精打細算的省錢族</option>
+          <option value="重視品質的中高端客群">重視品質的中高端客群</option>
+          <option value="科技愛好者／早期採用者">科技愛好者／早期採用者</option>
+          <option value="在地熟客／回頭客">在地熟客／回頭客</option>
+          <option value="custom">✏️ 自訂受眾…</option>
+        </select>
+        <input type="text" id="audienceCustomInput" placeholder="例：重視在地故事的年輕上班族" style="display:none;margin-top:8px;">
+      </div>
+    </div>
+
+    <details class="api-settings">
+      <summary>AI 深度健診設定（選用，需自備 API 金鑰）</summary>
+      <div class="api-grid">
+        <label>服務商<select id="aiProvider"></select></label>
+        <label>模型
+          <select id="aiModel"></select>
+          <input type="text" id="aiModelCustom" placeholder="輸入自訂模型名稱" style="display:none;margin-top:6px;">
+        </label>
+        <label class="full">API 金鑰<input type="password" id="aiKey" placeholder="貼上你的 API Key" autocomplete="off"></label>
+      </div>
+      <p class="api-note">金鑰只存在這台電腦的瀏覽器（localStorage），不會送到本工具以外的任何地方。留空時仍可使用「規則式引擎」完成基礎健診（字數/CTA/hashtag/濫用字詞偵測等），但語意層評分與改寫效果不如串接 AI。</p>
+    </details>
+
+    <div class="result-actions">
+      <button class="btn primary" id="evaluateBtn" type="button">🩺 開始健診</button>
+    </div>
+    <div id="evalReport" class="eval-report" aria-live="polite"></div>
+  </div>
+
+  <div class="card result-panel" id="resultPanel" style="display:none;">
+    <h2><span class="num">2</span>健診報告</h2>
+    <div id="warnBanner"></div>
+
+    <div class="score-hero">
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-track" cx="60" cy="60" r="52"></circle>
+          <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-score" id="gaugeScore">--</div>
+          <div class="gauge-grade" id="gaugeGrade">-</div>
+        </div>
+      </div>
+      <div class="score-summary">
+        <div class="summary-label">總評</div>
+        <p class="summary-text" id="summaryText">尚未健診。</p>
+      </div>
+    </div>
+
+    <div class="dim-grid" id="dimGrid"></div>
+
+    <div class="rx-card">
+      <h3>📋 處方箋：改善後貼文</h3>
+      <textarea id="improvedText" class="rx-textarea"></textarea>
+      <div class="result-actions">
+        <button class="btn primary" id="copyImprovedBtn" type="button">複製改善版</button>
+        <span class="char-hint" id="improvedCharHint"></span>
+      </div>
+      <div class="rx-rationale">
+        <div class="field-label">改寫理由</div>
+        <ul id="rxRationale"></ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="warn-box">
+    <strong>使用警語</strong>
+    <ul>
+      <li>「開始健診」若填有 API 金鑰會直接連線到你選擇的服務商，金鑰只存在你的瀏覽器 localStorage，本工具不會經手或保存；留空則使用本機規則式引擎，不連網。</li>
+      <li>健診結果（含分數、說明與改善版貼文）皆為 AI 或規則式引擎的參考建議，不保證絕對正確或適用於所有情境，發布前請自行判斷。</li>
+      <li>請勿在任何欄位輸入真實個資、機密資料或受著作權保護的他人內容。</li>
+      <li>僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用。</li>
+    </ul>
+  </div>
+
+  <div class="creator-box">
+    <h3>創作者資訊</h3>
+    <p><strong>Mark Tsai（蔡豐全）</strong></p>
+  </div>
+
+  <div class="footer-meta">
+    <span>製作：Mark Tsai｜<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a></span>
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.socialpostgrader" alt="訪客次數" style="vertical-align:middle;height:20px;">
+    <button type="button" id="installBtn" class="footer-link-btn">📲 加入主畫面</button>
+    <a href="manual.html">操作手冊 →</a>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+  function showToast(msg){
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  /* ================= 8 個評量維度 ================= */
+  var DIMENSIONS = [
+    { id:'hook',         label:'開頭吸引力',       icon:'🎯', weight:0.15 },
+    { id:'clarity',      label:'核心訊息清晰度',   icon:'🔍', weight:0.15 },
+    { id:'toneFit',      label:'語氣與受眾契合度', icon:'🗣️', weight:0.10 },
+    { id:'cta',          label:'CTA明確度',        icon:'📣', weight:0.15 },
+    { id:'readability',  label:'長度與排版易讀性', icon:'📐', weight:0.10 },
+    { id:'hashtag',      label:'Hashtag使用',      icon:'#️⃣', weight:0.10 },
+    { id:'emotion',      label:'情感共鳴／故事性', icon:'💛', weight:0.15 },
+    { id:'algoFriendly', label:'演算法友善度',     icon:'📡', weight:0.10 }
+  ];
+
+  /* ================= 平台規則表 ================= */
+  var PLATFORM_RULES = {
+    facebook:  { label:'Facebook',     charMin:400, charMax:600, hardLimit:63206, hookCutoff:477,
+                 hashtagMin:1, hashtagMax:2, toneNote:'親切口語、鼓勵留言',
+                 algoNote:'重視有意義的留言與分享，外部連結降觸及' },
+    instagram: { label:'Instagram',    charMin:150, charMax:300, hardLimit:2200, hookCutoff:125,
+                 hashtagMin:8, hashtagMax:15, toneNote:'視覺敘事、開頭抓眼球',
+                 algoNote:'重視儲存與分享數，首句須在3秒內抓住眼球' },
+    x:         { label:'X（Twitter）', charMin:150, charMax:220, hardLimit:280, hookCutoff:null,
+                 hashtagMin:1, hashtagMax:2, toneNote:'簡短有力、一句到位',
+                 algoNote:'重視留言與轉發，附媒體提升觸及' },
+    threads:   { label:'Threads',      charMin:200, charMax:350, hardLimit:500, hookCutoff:null,
+                 hashtagMin:2, hashtagMax:4, toneNote:'輕鬆對話感、個人觀點',
+                 algoNote:'演算法鼓勵文字對話互動，非導流' },
+    general:   { label:'通用',         charMin:150, charMax:400, hardLimit:null, hookCutoff:null,
+                 hashtagMin:3, hashtagMax:6, toneNote:'中性寬鬆標準',
+                 algoNote:'無特定平台，套用平均寬鬆容忍區間' }
+  };
+
+  var PURPOSE_LABELS = { conversion:'促購導購', awareness:'品牌曝光', engagement:'互動增粉', event:'活動宣傳', announcement:'公告通知', education:'教育科普', trust:'建立信任／口碑' };
+  var PURPOSE_TONE_EXPECT = { conversion:'casual', awareness:'neutral', engagement:'casual', event:'casual', announcement:'formal', education:'neutral', trust:'warm' };
+
+  function getPurposeValue(){
+    var sel = $('purposeSelect').value;
+    return sel;
+  }
+  function getPurposeLabel(){
+    var sel = $('purposeSelect').value;
+    if(sel === 'custom') return $('purposeCustomInput').value.trim() || '';
+    return PURPOSE_LABELS[sel] || '';
+  }
+  function syncPurposeCustomVisibility(){
+    $('purposeCustomInput').style.display = $('purposeSelect').value === 'custom' ? 'block' : 'none';
+  }
+  $('purposeSelect').addEventListener('change', function(){ syncPurposeCustomVisibility(); saveDraft(); });
+  $('purposeCustomInput').addEventListener('input', saveDraft);
+
+  function getAudienceText(){
+    var sel = $('audienceSelect').value;
+    return sel === 'custom' ? $('audienceCustomInput').value.trim() : sel;
+  }
+  function syncAudienceCustomVisibility(){
+    $('audienceCustomInput').style.display = $('audienceSelect').value === 'custom' ? 'block' : 'none';
+  }
+  function applyAudienceValue(text){
+    var sel = $('audienceSelect');
+    var matched = Array.from(sel.options).some(function(o){ return o.value === text; });
+    if(!text){ sel.value = ''; $('audienceCustomInput').value = ''; }
+    else if(matched){ sel.value = text; $('audienceCustomInput').value = ''; }
+    else { sel.value = 'custom'; $('audienceCustomInput').value = text; }
+    syncAudienceCustomVisibility();
+  }
+  $('audienceSelect').addEventListener('change', function(){ syncAudienceCustomVisibility(); saveDraft(); });
+  $('audienceCustomInput').addEventListener('input', saveDraft);
+
+  /* ================= 平台選擇 ================= */
+  var state = { platform: 'general' };
+  function renderPlatformPills(){
+    document.querySelectorAll('.platform-pill').forEach(function(el){
+      el.classList.toggle('active', el.getAttribute('data-platform') === state.platform);
+    });
+    updateCharHint();
+  }
+  $('platformPills').addEventListener('click', function(e){
+    var btn = e.target.closest('.platform-pill');
+    if(!btn) return;
+    state.platform = btn.getAttribute('data-platform');
+    renderPlatformPills();
+    saveDraft();
+  });
+
+  function updateCharHint(){
+    var rule = PLATFORM_RULES[state.platform];
+    var len = $('postInput').value.length;
+    var over = rule.hardLimit && len > rule.hardLimit;
+    var el = $('charHint');
+    el.className = 'char-hint' + (over ? ' over' : '');
+    el.textContent = '目前 ' + len + ' 字／建議 ' + rule.charMin + '-' + rule.charMax + ' 字'
+      + (rule.hardLimit ? '（平台上限 ' + rule.hardLimit + ' 字）' : '')
+      + (over ? '　已超過平台上限' : '');
+  }
+  $('postInput').addEventListener('input', function(){ updateCharHint(); saveDraft(); });
+
+  /* ================= 草稿持久化 ================= */
+  var DRAFT_KEY = 'postGraderDraft';
+  function saveDraft(){
+    try{
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        text: $('postInput').value,
+        platform: state.platform,
+        purpose: $('purposeSelect').value,
+        purposeCustom: $('purposeCustomInput').value,
+        audience: $('audienceSelect').value,
+        audienceCustom: $('audienceCustomInput').value
+      }));
+    }catch(e){}
+  }
+  function loadDraft(){
+    try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)) || null; }catch(e){ return null; }
+  }
+
+  /* ================= 內建範例（皆為虛構情境，示範不同品質程度） ================= */
+  var EXAMPLES = [
+    {
+      key:'good_story', label:'✅ 寫得好的：開幕故事',
+      platform:'facebook', purpose:'trust', audience:'重視在地故事與人情味的顧客',
+      text:'三年前我在租屋處的小廚房第一次烘豆失敗，滿屋子焦味卻捨不得倒掉那批豆子。\n\n今天，「拾光咖啡」信義店正式開幕了。這裡的每一杯手沖，都是那段從失敗中一次次調整配方的日子累積出來的味道。\n\n如果你也曾經因為一個小小的堅持而走到現在，歡迎進來坐坐，我想聽聽你的故事。\n\n👉 開幕優惠：即日起到本週日，出示這篇貼文享第二杯半價，歡迎留言告訴我們你最喜歡哪支豆子！\n\n#拾光咖啡 #信義店開幕'
+    },
+    {
+      key:'bad_hype', label:'❌ 促銷灌爆文',
+      platform:'instagram', purpose:'conversion', audience:'價格敏感的年輕消費者',
+      text:'‼️‼️全網最低價保證‼️‼️\n本店咖啡豆買一送一，數量有限手刀搶購！！！\n錯過等一年，保證後悔！！\n\n#咖啡 #優惠 #好喝 #必買 #台北 #信義區 #咖啡控 #咖啡豆 #下午茶 #甜點 #網美 #IG打卡 #必去 #排隊 #人氣'
+    },
+    {
+      key:'plain_flat', label:'😐 普通流水帳',
+      platform:'general', purpose:'awareness', audience:'',
+      text:'本店本週推出新品拿鐵，使用衣索比亞豆，歡迎大家來品嚐，營業時間為早上八點到晚上八點，地址在中山北路，有任何問題歡迎詢問，謝謝大家的支持與愛護，也歡迎大家分享給朋友知道，我們會持續推出更多優惠與新品，敬請期待。'
+    },
+    {
+      key:'oversell', label:'📢 過度促銷硬廣',
+      platform:'facebook', purpose:'conversion', audience:'',
+      text:'錯過等一年！本店史上最強優惠只到今天，保證全網最便宜，100%回本，快留言+1，晚了不負責！！！\n標記三個朋友一起來搶購！！！'
+    },
+    {
+      key:'info_type', label:'📚 資訊科普型',
+      platform:'threads', purpose:'education', audience:'對咖啡知識有興趣的愛好者',
+      text:'淺焙豆的酸味其實來自「未完全發展的梅納反應」，酸值高不代表品質差，反而代表產地處理更講究水洗與日曬控制。\n\n下次喝到偏酸的淺焙豆，不妨換個角度：那是莊園在告訴你，這批豆子的處理過程被好好對待過。\n\n你平常喜歡淺焙還是深焙呢？'
+    }
+  ];
+
+  function initExamples(){
+    var row = $('exampleRow');
+    row.innerHTML = EXAMPLES.map(function(ex){
+      return '<button type="button" class="example-btn" data-key="' + ex.key + '">' + ex.label + '</button>';
+    }).join('');
+    row.addEventListener('click', function(e){
+      var btn = e.target.closest('.example-btn');
+      if(!btn) return;
+      var ex = EXAMPLES.find(function(x){ return x.key === btn.getAttribute('data-key'); });
+      if(!ex) return;
+      var hasContent = $('postInput').value.trim();
+      if(hasContent && !confirm('套用範例會覆蓋目前已輸入的內容，確定要繼續嗎？')) return;
+      $('postInput').value = ex.text;
+      state.platform = ex.platform;
+      $('purposeSelect').value = ex.purpose || '';
+      applyAudienceValue(ex.audience || '');
+      syncPurposeCustomVisibility();
+      renderPlatformPills();
+      saveDraft();
+      showToast('已套用範例：' + ex.label);
+    });
+  }
+
+  /* ================= 規則式健診引擎 ================= */
+  function firstSentence(text){
+    var m = text.trim().match(/^[^。！？\n]*[。！？\n]?/);
+    return m ? m[0].replace(/[。！？\n]$/, '').trim() : text.trim();
+  }
+  function sentenceSplit(text){
+    return text.split(/[。！？\n]/).map(function(s){ return s.trim(); }).filter(Boolean);
+  }
+  function containsEmoji(str){
+    return /[\u{1F300}-\u{1FAFF}☀-➿]/u.test(str);
+  }
+  function extractHashtags(text, count){
+    var stop = ['的','了','是','在','我們','你們','大家','一個','這個','那個','就是','還有','以及','和','與','或','也','都','很','非常','真的','可以','不要','已經','因為','所以','但是','如果','而且','來','去','有','無','個','們'];
+    var tokens = text.replace(/[，。！？、,.!?：:；;「」『』（）()\n#]/g, ' ').split(/\s+/).filter(Boolean);
+    var seen = {}; var tags = [];
+    tokens.forEach(function(t){
+      var clean = t.replace(/[^一-龥a-zA-Z0-9]/g, '');
+      if(clean.length < 2 || stop.indexOf(clean) >= 0 || seen[clean]) return;
+      seen[clean] = true;
+      tags.push('#' + clean);
+    });
+    return tags.slice(0, count);
+  }
+
+  function scoreHook(text){
+    var first = firstSentence(text);
+    var len = first.length;
+    var score = 60;
+    var comment, suggestion;
+    var cliches = ['大家好','各位好','今天要跟大家分享','哈囉大家','嗨大家','小編來跟大家','跟大家介紹一下'];
+    var isCliche = cliches.some(function(c){ return first.indexOf(c) === 0; });
+    if(isCliche){ score -= 25; }
+    if(len >= 8 && len <= 30) score += 15;
+    else if(len < 4) score -= 10;
+    else if(len > 50) score -= 12;
+    if(/\d/.test(first)) score += 8;
+    if(/[？?]/.test(first)) score += 10;
+    if(containsEmoji(first)) score += 5;
+    score = clamp(score, 0, 100);
+    if(isCliche){ comment = '開頭以陳腔濫調起手，容易被讀者滑過去。'; suggestion = '拿掉「大家好／今天要跟大家分享」這類開場，改用問句、數字或畫面感強的一句話直接切入重點。'; }
+    else if(score >= 80){ comment = '開頭精簡有記憶點，能在前幾秒抓住注意力。'; suggestion = '維持這種開門見山的寫法，可再嘗試置入具體數字或懸念增加點擊慾望。'; }
+    else if(len > 50){ comment = '開頭第一句偏長，讀者還沒抓到重點就可能滑走。'; suggestion = '把第一句拆短，8-30字內先丟出一個吸睛的鉤子，細節留到後面說明。'; }
+    else { comment = '開頭平穩但缺乏明顯的吸睛設計。'; suggestion = '試著加入提問、數字或情境畫面，讓第一句更有停手的理由。'; }
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function scoreClarity(text){
+    var sentences = sentenceSplit(text);
+    var avgLen = sentences.length ? text.replace(/\s/g,'').length / sentences.length : text.length;
+    var topicGroups = [
+      { name:'優惠促銷', kw:['優惠','折扣','特賣','折','買一送一','限量'] },
+      { name:'活動報名', kw:['報名','開課','招生','活動','講座'] },
+      { name:'公告資訊', kw:['公休','公告','暫停營業','異動','通知'] },
+      { name:'徵才', kw:['徵才','徵人','招募','缺工'] }
+    ];
+    var hitGroups = topicGroups.filter(function(g){ return g.kw.some(function(k){ return text.indexOf(k) >= 0; }); });
+    var score = 78;
+    var comment, suggestion;
+    if(avgLen > 60) score -= 15;
+    if(sentences.length <= 1 && text.replace(/\s/g,'').length > 150) score -= 12;
+    if(hitGroups.length >= 3) score -= 20;
+    score = clamp(score, 0, 100);
+    if(hitGroups.length >= 3){ comment = '同一則貼文同時涵蓋「' + hitGroups.map(function(g){return g.name;}).join('、') + '」等多個主題，訊息容易分散。'; suggestion = '一則貼文只專注一個核心訊息，其餘主題拆成獨立貼文分開發布。'; }
+    else if(sentences.length <= 1 && text.length > 150){ comment = '整段幾乎是一句到底，讀者不易抓到重點停頓。'; suggestion = '用句號或換行把長句拆成幾個短句，讓核心訊息更容易被抓住。'; }
+    else if(score >= 80){ comment = '訊息單一明確，讀完能清楚掌握這則貼文在說什麼。'; suggestion = '維持一則貼文一個核心訊息的原則即可。'; }
+    else { comment = '句子平均長度偏長，核心訊息略顯模糊。'; suggestion = '把長句拆短、刪掉非必要的形容詞，讓重點在前兩句就浮現。'; }
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function scoreToneFit(text, purposeVal, audience){
+    var expect = PURPOSE_TONE_EXPECT[purposeVal] || 'neutral';
+    var casualHits = (text.match(/(啦|喔|～|~|哦|耶|呦|齁|唷)/g) || []).length;
+    var formalHits = (text.match(/(您|敬請|蒞臨|台端|貴賓|茲)/g) || []).length;
+    var score = 70;
+    var comment, suggestion;
+    if(!purposeVal && !audience){
+      comment = '未指定貼文目的或目標受眾，僅作中性基礎評分。';
+      suggestion = '填寫貼文目的與目標受眾，可讓語氣契合度評分更精準。';
+      return { score:70, comment:comment, suggestion:suggestion };
+    }
+    if(expect === 'formal'){
+      if(formalHits > 0) score += 15;
+      if(casualHits > 3) score -= 15;
+    } else if(expect === 'casual' || expect === 'warm'){
+      if(casualHits > 0) score += 12;
+      if(formalHits > 2) score -= 10;
+    }
+    score = clamp(score, 0, 100);
+    if(score >= 80){ comment = '用詞語氣與宣告的目的／受眾方向大致吻合。'; suggestion = '持續維持這個語氣調性即可。'; }
+    else if(score < 60){ comment = '目前用詞語氣與宣告的目的偏向不太一致（例如正式公告卻用了大量口語助詞，或想拉近距離卻語氣過於生硬）。'; suggestion = '依「' + (PURPOSE_LABELS[purposeVal] || purposeVal) + '」的目的重新檢視用詞，公告類收斂口語助詞、互動類則可以再放鬆一點語氣。'; }
+    else { comment = '語氣大致中性，與目的／受眾沒有明顯衝突。'; suggestion = '可依目標受眾的年齡層與慣用語再微調用詞細節。'; }
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function scoreCta(text){
+    var ctaKeywords = ['立即','馬上','點擊','留言','私訊','購買','預約','分享','追蹤','報名','搶購','訂閱','加入','按讚','限時','手刀','詢問','洽詢'];
+    var found = ctaKeywords.filter(function(k){ return text.indexOf(k) >= 0; });
+    var score = 40;
+    var comment, suggestion;
+    if(found.length > 0){
+      score = 65;
+      var idx = text.indexOf(found[0]);
+      if(idx > text.length * 0.6) score += 20;
+      else score += 8;
+      var concreteMarkers = ['今天','明天','前','截止','門市','官網','連結','私訊我們'];
+      if(concreteMarkers.some(function(m){ return text.indexOf(m) >= 0; })) score += 12;
+    }
+    score = clamp(score, 0, 100);
+    if(found.length === 0){ comment = '整篇貼文找不到明確的行動呼籲（CTA）。'; suggestion = '在文末加一句具體的行動呼籲，例如「即刻私訊詢問」或「點擊連結立即預約」。'; }
+    else if(score >= 80){ comment = 'CTA 明確且置於文末，行動呼籲具體可執行。'; suggestion = '維持現況即可，也可測試加上時間限制提升急迫感。'; }
+    else { comment = '雖有行動呼籲字詞，但不夠具體或位置偏前段，容易被忽略。'; suggestion = '把 CTA 移到文末，並加上具體的時間、地點或連結，讓讀者知道「現在該做什麼」。'; }
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function scoreReadability(text, rule){
+    var len = text.length;
+    var score = 75;
+    var comment, suggestion;
+    if(rule.hardLimit && len > rule.hardLimit){
+      score = 20; comment = '字數已超過平台硬性上限，將無法完整發布。'; suggestion = '刪減至 ' + rule.hardLimit + ' 字以內，把非必要細節移到留言區補充。';
+      return { score:score, comment:comment, suggestion:suggestion };
+    }
+    if(len < rule.charMin * 0.5) score -= 15;
+    else if(len > rule.charMax * 1.5) score -= 15;
+    var paragraphs = text.split(/\n+/).filter(Boolean);
+    var avgParaLen = len / Math.max(paragraphs.length, 1);
+    if(avgParaLen > 150) score -= 15;
+    score = clamp(score, 0, 100);
+    if(avgParaLen > 150){ comment = '整段文字缺乏分段，手機閱讀時容易變成一大塊文字磚。'; suggestion = '每 2-3 句就換行分段，讓版面更容易掃讀。'; }
+    else if(len < rule.charMin * 0.5){ comment = '篇幅明顯偏短，可能資訊量不足以說服讀者行動。'; suggestion = '補充更多具體細節（時間、地點、原因），拉近到建議的 ' + rule.charMin + '-' + rule.charMax + ' 字區間。'; }
+    else if(len > rule.charMax * 1.5){ comment = '篇幅偏長，超出這個平台讀者習慣的閱讀長度。'; suggestion = '刪減重複或次要的說明，聚焦在一個核心賣點。'; }
+    else { comment = '長度與分段大致符合這個平台的閱讀習慣。'; suggestion = '維持目前的長度與分段節奏即可。'; }
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function scoreHashtag(text, rule){
+    var tags = text.match(/#[^\s#，。！？、,.!?]+/g) || [];
+    var count = tags.length;
+    var score;
+    var comment, suggestion;
+    if(count === 0){ score = 50; comment = '完全沒有使用 hashtag。'; suggestion = '依內文關鍵詞補上 ' + rule.hashtagMin + '-' + rule.hashtagMax + ' 個 hashtag，有助於被更多人搜尋到。'; }
+    else if(count < rule.hashtagMin){ score = 60; comment = 'hashtag 數量（' + count + '個）略少於這個平台的建議區間。'; suggestion = '再補幾個與內容相關的 hashtag，達到建議的 ' + rule.hashtagMin + '-' + rule.hashtagMax + ' 個。'; }
+    else if(count <= rule.hashtagMax){ score = 90; comment = 'hashtag 數量（' + count + '個）落在這個平台的建議區間內。'; suggestion = '維持目前的 hashtag 數量與相關性即可。'; }
+    else { score = 55; comment = 'hashtag 數量（' + count + '個）明顯超過建議區間，可能顯得雜亂。'; suggestion = '精簡到 ' + rule.hashtagMin + '-' + rule.hashtagMax + ' 個，保留與內容最相關的幾個即可。'; }
+    var fillerWords = ['#的','#是','#在','#了','#和'];
+    if(tags.some(function(t){ return fillerWords.indexOf(t) >= 0; })){
+      score -= 15;
+      comment += ' 且含有虛詞湊數的 hashtag。';
+      suggestion = '移除「#的／#是」這類虛詞 hashtag，換成真正跟內容相關的關鍵詞。';
+    }
+    score = clamp(score, 0, 100);
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function scoreEmotion(text){
+    var firstPersonHits = (text.match(/(我們|我的|我家|我)/g) || []).length;
+    var sensoryWords = ['聞到','看到','聽到','摸起來','嚐起來','觸感','香氣','酥脆','溫暖','畫面','回憶','故事'];
+    var emotionWords = ['開心','感動','驚喜','溫馨','感謝','珍惜','熱血','期待','捨不得','懷念'];
+    var hitWords = sensoryWords.concat(emotionWords).filter(function(w){ return text.indexOf(w) >= 0; });
+    var score = 50 + Math.min(firstPersonHits, 3) * 5 + hitWords.length * 8;
+    score = clamp(score, 0, 100);
+    var comment, suggestion;
+    if(hitWords.length === 0 && firstPersonHits === 0){ comment = '整篇偏向資訊條列，缺乏故事感或情感連結。'; suggestion = '加入一段第一人稱的小故事或感官描述（畫面、氣味、心情），讓讀者更有共鳴。'; }
+    else if(score >= 80){ comment = '文字帶有畫面感與情感連結，容易引起共鳴。'; suggestion = '維持這種故事化的敘事方式即可。'; }
+    else { comment = '有一些情感元素，但故事感仍可以再加強。'; suggestion = '補充更多具體的感官細節或個人視角，強化畫面感。'; }
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function scoreAlgoFriendly(text){
+    var score = 90;
+    var flags = [];
+    if(/!{3,}|！{3,}/.test(text)){ score -= 20; flags.push('連續驚嘆號'); }
+    if(/[A-Z]{6,}/.test(text)){ score -= 15; flags.push('大量全大寫字母'); }
+    var hypeWords = ['保證','最強','全網最低','百分之百','絕對','史上最','錯過等一年'];
+    var hypeHits = hypeWords.filter(function(w){ return text.indexOf(w) >= 0; });
+    score -= hypeHits.length * 10;
+    if(/留言\s*\+?\d|快分享|標記(三個)?朋友|tag朋友/.test(text)){ score -= 15; flags.push('典型 engagement bait 句式'); }
+    score = clamp(score, 0, 100);
+    var comment, suggestion;
+    if(flags.length === 0 && hypeHits.length === 0){ comment = '用詞自然，沒有明顯的過度促銷或誘導互動訊號。'; suggestion = '維持真誠的表達方式即可。'; }
+    else{
+      comment = '偵測到' + flags.concat(hypeHits.length ? ['誇大詞彙（' + hypeHits.join('、') + '）'] : []).join('、') + '，可能被平台判定為過度促銷而降低觸及。';
+      suggestion = '拿掉誇大詞彙與連續驚嘆號，改用具體事實與數據取代空泛的「保證／最強」等說法。';
+    }
+    return { score:score, comment:comment, suggestion:suggestion };
+  }
+
+  function computeRuleDimensions(text, platformKey, purposeVal, audience){
+    var rule = PLATFORM_RULES[platformKey];
+    return {
+      hook: scoreHook(text),
+      clarity: scoreClarity(text),
+      toneFit: scoreToneFit(text, purposeVal, audience),
+      cta: scoreCta(text),
+      readability: scoreReadability(text, rule),
+      hashtag: scoreHashtag(text, rule),
+      emotion: scoreEmotion(text),
+      algoFriendly: scoreAlgoFriendly(text)
+    };
+  }
+
+  function ruleBasedImprove(text, platformKey){
+    var rule = PLATFORM_RULES[platformKey];
+    var trimmed = text.trim();
+    var existingTags = trimmed.match(/#[^\s#，。！？、,.!?]+/g) || [];
+    var bodySource = trimmed.replace(/#[^\s#，。！？、,.!?]+/g, '')
+      .replace(/([。！？]){2,}/g, '$1')
+      .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    var sentences = bodySource.split(/(?<=[。！？\n])/).map(function(s){ return s.trim(); }).filter(Boolean);
+    var first = sentences[0] || bodySource;
+    var cliches = ['大家好','各位好','今天要跟大家分享','哈囉大家','嗨大家','小編來跟大家'];
+    var isWeakHook = first.length > 40 || cliches.some(function(c){ return first.indexOf(c) === 0; });
+
+    var body = [];
+    for(var i = 0; i < sentences.length; i += 2){
+      body.push(sentences.slice(i, i + 2).join(''));
+    }
+    var bodyText = body.join('\n\n');
+    if(isWeakHook) bodyText = '你知道嗎？\n\n' + bodyText;
+
+    var ctaKeywords = /(立即|馬上|點擊|留言|私訊|購買|預約|分享|追蹤|報名|搶購|訂閱|加入|按讚|限時|手刀|詢問|洽詢)/;
+    var hasCta = ctaKeywords.test(bodySource);
+    var ctaLine = hasCta ? '' : '\n\n👉 想了解更多，歡迎留言或私訊詢問！';
+
+    var neededMore = Math.max(0, rule.hashtagMin - existingTags.length);
+    var extraTags = neededMore > 0 ? extractHashtags(bodySource, neededMore) : [];
+    var tagLine = (existingTags.length || extraTags.length) ? ('\n\n' + existingTags.concat(extraTags).join(' ')) : '';
+
+    var result = (bodyText + ctaLine + tagLine).trim();
+    if(rule.hardLimit && result.length > rule.hardLimit){
+      result = result.slice(0, rule.hardLimit - 3) + '...';
+    }
+    return { text: result, isWeakHook: isWeakHook, hasCta: hasCta, addedTags: extraTags };
+  }
+
+  function ruleBasedRationale(improveMeta){
+    var out = [];
+    if(improveMeta.isWeakHook) out.push('開頭加入提問句，提高好奇心與停留率');
+    out.push('依句子重新分段，提升手機掃讀的易讀性');
+    if(!improveMeta.hasCta) out.push('補上明確的行動呼籲（CTA），引導讀者留言或私訊');
+    if(improveMeta.addedTags && improveMeta.addedTags.length) out.push('新增 ' + improveMeta.addedTags.length + ' 個依內文關鍵詞產生的 hashtag，補足到平台建議數量');
+    if(!out.length) out.push('原文已具備基本要素，僅做小幅度分段與用詞微調（此為規則式引擎產生，如需更精準的改寫請填入 API 金鑰）');
+    return out;
+  }
+
+  /* ================= AI 常用模型清單 ================= */
+  var AI_PROVIDERS = {
+    claude:     {label:'Claude（Anthropic）',       defaultModel:'claude-opus-4-8'},
+    openai:     {label:'OpenAI',                    defaultModel:'gpt-5-mini'},
+    gemini:     {label:'Gemini（Google AI Studio）', defaultModel:'gemini-3.5-flash'},
+    openrouter: {label:'OpenRouter',                defaultModel:'openai/gpt-4o-mini'}
+  };
+  var MODEL_OPTIONS = {
+    claude: [
+      {value:'claude-opus-4-8', label:'Claude Opus 4.8（最強）'},
+      {value:'claude-sonnet-4-8', label:'Claude Sonnet 4.8（均衡，推薦）'},
+      {value:'claude-haiku-4-5', label:'Claude Haiku 4.5（快速省錢）'}
+    ],
+    openai: [
+      {value:'gpt-5', label:'GPT-5（最強）'},
+      {value:'gpt-5-mini', label:'GPT-5 mini（均衡，推薦）'},
+      {value:'gpt-4o-mini', label:'GPT-4o mini（快速省錢）'},
+      {value:'o3-mini', label:'o3-mini（推理強化）'}
+    ],
+    gemini: [
+      {value:'gemini-3.5-pro', label:'Gemini 3.5 Pro（最強）'},
+      {value:'gemini-3.5-flash', label:'Gemini 3.5 Flash（均衡，推薦）'},
+      {value:'gemini-2.5-flash', label:'Gemini 2.5 Flash（快速省錢）'}
+    ],
+    openrouter: [
+      {value:'openai/gpt-4o-mini', label:'OpenAI GPT-4o mini（推薦）'},
+      {value:'anthropic/claude-sonnet-4.5', label:'Anthropic Claude Sonnet 4.5'},
+      {value:'google/gemini-2.5-flash', label:'Google Gemini 2.5 Flash'},
+      {value:'meta-llama/llama-3.3-70b-instruct', label:'Meta Llama 3.3 70B（常見免費/低價選項）'}
+    ]
+  };
+  var API_STORAGE_KEY = 'postGraderApiConfig';
+
+  function loadApiConfig(){
+    try{ return JSON.parse(localStorage.getItem(API_STORAGE_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function getResolvedModel(){
+    var sel = $('aiModel').value;
+    return sel === 'custom' ? $('aiModelCustom').value.trim() : sel;
+  }
+  function persistApiConfig(){
+    try{
+      localStorage.setItem(API_STORAGE_KEY, JSON.stringify({
+        provider: $('aiProvider').value,
+        model: getResolvedModel(),
+        apiKey: $('aiKey').value.trim()
+      }));
+    }catch(e){}
+  }
+  function syncModelCustomVisibility(){
+    $('aiModelCustom').style.display = $('aiModel').value === 'custom' ? 'block' : 'none';
+  }
+  function renderModelOptions(provider, presetModel){
+    var opts = MODEL_OPTIONS[provider] || [];
+    var sel = $('aiModel');
+    sel.innerHTML = opts.map(function(o){ return '<option value="' + o.value + '">' + escapeHtml(o.label) + '</option>'; }).join('')
+      + '<option value="custom">✏️ 自訂模型名稱…</option>';
+    var matched = presetModel && opts.some(function(o){ return o.value === presetModel; });
+    if(matched){ sel.value = presetModel; $('aiModelCustom').value = ''; }
+    else if(presetModel){ sel.value = 'custom'; $('aiModelCustom').value = presetModel; }
+    else { sel.value = AI_PROVIDERS[provider].defaultModel; $('aiModelCustom').value = ''; }
+    syncModelCustomVisibility();
+  }
+  function initAiPanel(){
+    var providerSel = $('aiProvider');
+    providerSel.innerHTML = Object.keys(AI_PROVIDERS).map(function(k){
+      return '<option value="' + k + '">' + AI_PROVIDERS[k].label + '</option>';
+    }).join('');
+    var cfg = loadApiConfig();
+    providerSel.value = (cfg.provider && AI_PROVIDERS[cfg.provider]) ? cfg.provider : 'claude';
+    renderModelOptions(providerSel.value, cfg.model);
+    $('aiKey').value = cfg.apiKey || '';
+    providerSel.addEventListener('change', function(){
+      renderModelOptions(providerSel.value, null);
+      persistApiConfig();
+    });
+    $('aiModel').addEventListener('change', function(){ syncModelCustomVisibility(); persistApiConfig(); });
+    $('aiModelCustom').addEventListener('input', persistApiConfig);
+    $('aiKey').addEventListener('input', persistApiConfig);
+  }
+
+  /* ================= AI 呼叫（四家 BYOK，比照 SocialPost/coffee-ig-planner 既有模式） ================= */
+  async function callLLM(provider, model, apiKey, prompt, onRetry){
+    var url, headers, body, extract;
+    if(provider === 'claude'){
+      url = 'https://api.anthropic.com/v1/messages';
+      headers = {'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+      body = {model: model, max_tokens: 4000, messages: [{role:'user', content: prompt}]};
+      extract = function(d){
+        if(d.stop_reason === 'refusal') throw new Error('模型拒絕了這個請求（refusal）');
+        var t = (d.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'openai'){
+      url = 'https://api.openai.com/v1/chat/completions';
+      headers = {'content-type':'application/json','authorization':'Bearer ' + apiKey};
+      body = {model: model, messages: [{role:'user', content: prompt}]};
+      extract = function(d){
+        var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'gemini'){
+      url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
+      headers = {'content-type':'application/json','x-goog-api-key':apiKey};
+      body = {contents: [{parts: [{text: prompt}]}]};
+      extract = function(d){
+        var parts = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
+        var t = parts.map(function(p){ return p.text || ''; }).join('');
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'openrouter'){
+      url = 'https://openrouter.ai/api/v1/chat/completions';
+      headers = {'content-type':'application/json','authorization':'Bearer ' + apiKey};
+      body = {model: model, messages: [{role:'user', content: prompt}]};
+      extract = function(d){
+        var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else {
+      throw new Error('不支援的服務商');
+    }
+    var RETRYABLE = {429:1, 500:1, 503:1, 529:1};
+    var MAX_TRIES = 3;
+    for(var attempt = 1; attempt <= MAX_TRIES; attempt++){
+      var resp = await fetch(url, {method:'POST', headers:headers, body:JSON.stringify(body), signal: AbortSignal.timeout(180000)});
+      var raw = await resp.text();
+      if(resp.ok) return extract(JSON.parse(raw));
+      var msg = raw.slice(0, 300);
+      try{ var err = JSON.parse(raw); msg = (err.error && err.error.message) || err.message || msg; }catch(e){}
+      if(RETRYABLE[resp.status] && attempt < MAX_TRIES){
+        var waitSec = attempt * 8;
+        if(onRetry) onRetry(attempt, resp.status, waitSec);
+        await new Promise(function(r){ setTimeout(r, waitSec * 1000); });
+        continue;
+      }
+      if(resp.status === 404) msg += '——這通常表示模型名稱錯誤或已停用，請確認目前可用的模型 ID';
+      if(RETRYABLE[resp.status]) msg += '——已自動重試 ' + (MAX_TRIES - 1) + ' 次仍失敗，多為服務商暫時過載，請稍候再試或更換模型／服務商';
+      throw new Error('API 回應 ' + resp.status + '：' + msg);
+    }
+  }
+
+  function extractJsonObject(text){
+    var cleaned = text.replace(/```json|```/g, '');
+    var start = cleaned.indexOf('{');
+    var end = cleaned.lastIndexOf('}');
+    if(start < 0 || end <= start) throw new Error('模型輸出中找不到 JSON 物件：' + text.slice(0, 120));
+    return JSON.parse(cleaned.slice(start, end + 1));
+  }
+
+  function buildEvaluatePrompt(text, platformKey, purposeLabel, audience){
+    var rule = PLATFORM_RULES[platformKey];
+    var dimLines = DIMENSIONS.map(function(d){ return '- ' + d.id + '（' + d.label + '）'; }).join('\n');
+    var lines = [];
+    lines.push('你是一位熟悉台灣社群媒體經營的內容顧問，請針對以下這則社群貼文做專業健診評分與改寫。');
+    lines.push('');
+    lines.push('目標平台：' + rule.label + '（建議字數 ' + rule.charMin + '-' + rule.charMax + ' 字' + (rule.hardLimit ? '，平台上限 ' + rule.hardLimit + ' 字' : '') + '；hashtag建議 ' + rule.hashtagMin + '-' + rule.hashtagMax + ' 個；語氣慣例：' + rule.toneNote + '；演算法重點：' + rule.algoNote + '）');
+    if(purposeLabel) lines.push('貼文目的：' + purposeLabel);
+    if(audience) lines.push('目標受眾：' + audience);
+    lines.push('');
+    lines.push('原始貼文全文如下：\n「' + text + '」');
+    lines.push('');
+    lines.push('請針對以下 8 個維度逐一評分（0-100 分整數）並各給一句話說明與一句具體改進建議：');
+    lines.push(dimLines);
+    lines.push('');
+    lines.push('並產生一份「改寫後的完整貼文全文」（含hashtag，直接可複製發布，長度需符合上述平台建議），以及3-6條「改寫理由」條列。');
+    lines.push('');
+    lines.push('請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字，格式固定為：');
+    lines.push('{"overallSummary":"...","dimensions":{"hook":{"score":0,"comment":"...","suggestion":"..."},"clarity":{"score":0,"comment":"...","suggestion":"..."},"toneFit":{"score":0,"comment":"...","suggestion":"..."},"cta":{"score":0,"comment":"...","suggestion":"..."},"readability":{"score":0,"comment":"...","suggestion":"..."},"hashtag":{"score":0,"comment":"...","suggestion":"..."},"emotion":{"score":0,"comment":"...","suggestion":"..."},"algoFriendly":{"score":0,"comment":"...","suggestion":"..."}},"improvedPost":"...","improvementRationale":["...","..."]}');
+    return lines.join('\n');
+  }
+
+  function clampScore(n){
+    n = Number(n);
+    if(!isFinite(n)) return null;
+    return clamp(Math.round(n), 0, 100);
+  }
+
+  function validateAiEvaluation(parsed, ruleDims){
+    var dims = {};
+    var missing = [];
+    DIMENSIONS.forEach(function(d){
+      var src = parsed.dimensions && parsed.dimensions[d.id];
+      var score = src ? clampScore(src.score) : null;
+      var comment = src && typeof src.comment === 'string' ? src.comment.trim().slice(0, 300) : '';
+      var suggestion = src && typeof src.suggestion === 'string' ? src.suggestion.trim().slice(0, 300) : '';
+      if(score !== null && comment && suggestion){
+        dims[d.id] = { score:score, comment:comment, suggestion:suggestion, source:'ai' };
+      } else {
+        dims[d.id] = Object.assign({}, ruleDims[d.id], { source:'rule' });
+        missing.push(d.label);
+      }
+    });
+    var improvedPost = typeof parsed.improvedPost === 'string' ? parsed.improvedPost.trim() : '';
+    if(improvedPost.length === 0 || improvedPost.length > 3000) improvedPost = null;
+    var rationale = Array.isArray(parsed.improvementRationale)
+      ? parsed.improvementRationale.filter(function(s){ return typeof s === 'string' && s.trim(); }).slice(0, 6)
+      : [];
+    var overallSummary = typeof parsed.overallSummary === 'string' ? parsed.overallSummary.trim().slice(0, 300) : '';
+    return { dims:dims, missing:missing, improvedPost:improvedPost, rationale:rationale, overallSummary:overallSummary };
+  }
+
+  /* ================= 健診主流程 ================= */
+  var GAUGE_CIRC = 2 * Math.PI * 52;
+  $('gaugeFill').style.strokeDasharray = GAUGE_CIRC.toFixed(2);
+  $('gaugeFill').style.strokeDashoffset = GAUGE_CIRC.toFixed(2);
+
+  function gradeOf(score){
+    if(score >= 90) return 'a';
+    if(score >= 75) return 'b';
+    if(score >= 60) return 'c';
+    return 'd';
+  }
+  var GRADE_COLOR = { a:'var(--green)', b:'var(--cyan)', c:'var(--amber)', d:'var(--red)' };
+  var GRADE_LABEL = { a:'A · 優異', b:'B · 良好', c:'C · 普通', d:'D · 待加強' };
+
+  function computeOverall(dims){
+    var total = 0;
+    DIMENSIONS.forEach(function(d){ total += (dims[d.id].score || 0) * d.weight; });
+    return Math.round(total);
+  }
+
+  function renderResult(dims, improvedPost, rationale, overallSummary, usedAi, platformKey){
+    var overall = computeOverall(dims);
+    var grade = gradeOf(overall);
+
+    $('gaugeScore').textContent = overall;
+    $('gaugeScore').style.color = GRADE_COLOR[grade];
+    var gradeEl = $('gaugeGrade');
+    gradeEl.textContent = GRADE_LABEL[grade];
+    gradeEl.className = 'gauge-grade grade-' + grade;
+    var offset = GAUGE_CIRC * (1 - overall / 100);
+    $('gaugeFill').style.strokeDashoffset = offset.toFixed(2);
+    $('gaugeFill').style.stroke = GRADE_COLOR[grade];
+
+    $('summaryText').textContent = overallSummary || (usedAi ? '已完成 AI 深度健診。' : '已完成規則式基礎健診，如需更精準的語意評分請於下方設定 API 金鑰。');
+
+    var dimGrid = $('dimGrid');
+    dimGrid.innerHTML = DIMENSIONS.map(function(d){
+      var v = dims[d.id];
+      var g = gradeOf(v.score);
+      return '<div class="dim-card" data-source="' + (v.source || 'rule') + '">'
+        + '<div class="dim-head"><div class="dim-title"><span class="dim-icon">' + d.icon + '</span>' + d.label + '</div>'
+        + '<span class="dim-score" style="color:' + GRADE_COLOR[g] + '">' + v.score + '</span></div>'
+        + '<div class="dim-bar-track"><div class="dim-bar-fill" style="width:' + v.score + '%;background:' + GRADE_COLOR[g] + '"></div></div>'
+        + '<p class="dim-comment">' + escapeHtml(v.comment) + '</p>'
+        + '<p class="dim-suggestion">' + escapeHtml(v.suggestion) + '</p>'
+        + '</div>';
+    }).join('');
+
+    $('improvedText').value = improvedPost;
+    updateImprovedCharHint(platformKey);
+    $('rxRationale').innerHTML = rationale.map(function(r){ return '<li>' + escapeHtml(r) + '</li>'; }).join('');
+
+    var warnBanner = $('warnBanner');
+    if(!usedAi){
+      warnBanner.innerHTML = '<div class="warn-banner"><strong>規則式健診</strong>：目前為免 AI 的基礎健診結果，如需更精準的語意評分與改寫，請於上方「AI 深度健診設定」填入 API 金鑰。</div>';
+    } else { warnBanner.innerHTML = ''; }
+
+    $('resultPanel').style.display = 'block';
+    $('resultPanel').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function updateImprovedCharHint(platformKey){
+    var rule = PLATFORM_RULES[platformKey];
+    var len = $('improvedText').value.length;
+    var over = rule.hardLimit && len > rule.hardLimit;
+    var el = $('improvedCharHint');
+    el.className = 'char-hint' + (over ? ' over' : '');
+    el.textContent = '目前 ' + len + ' 字／建議 ' + rule.charMin + '-' + rule.charMax + ' 字' + (over ? '　已超過平台上限' : '');
+  }
+  $('improvedText').addEventListener('input', function(){ updateImprovedCharHint(state.platform); });
+
+  $('evaluateBtn').addEventListener('click', async function(){
+    var text = $('postInput').value.trim();
+    var report = $('evalReport');
+    if(!text){ report.innerHTML = '<div class="bad">請先貼上貼文內容</div>'; return; }
+
+    var platformKey = state.platform;
+    var purposeVal = getPurposeValue();
+    var purposeLabel = getPurposeLabel();
+    var audience = getAudienceText();
+
+    var ruleDims = computeRuleDimensions(text, platformKey, purposeVal, audience);
+    var ruleImproveMeta = ruleBasedImprove(text, platformKey);
+    var ruleRationale = ruleBasedRationale(ruleImproveMeta);
+
+    var apiKey = $('aiKey').value.trim();
+    var provider = $('aiProvider').value;
+    var model = getResolvedModel();
+    persistApiConfig();
+
+    var btn = this;
+    btn.disabled = true;
+    $('inputCard').classList.add('scanning');
+
+    var finalDims = ruleDims, improvedPost = ruleImproveMeta.text, rationale = ruleRationale, overallSummary = '', usedAi = false;
+
+    if(apiKey){
+      report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）健診中，請稍候…</div>';
+      try{
+        var prompt = buildEvaluatePrompt(text, platformKey, purposeLabel, audience);
+        var raw = await callLLM(provider, model, apiKey, prompt, function(attempt, status, waitSec){
+          report.innerHTML = '<div class="warn">API 回應 ' + status + '（服務商暫時過載／限流），' + waitSec + ' 秒後自動重試（第 ' + attempt + '／2 次）…</div>';
+        });
+        var parsed = extractJsonObject(raw);
+        var validated = validateAiEvaluation(parsed, ruleDims);
+        finalDims = validated.dims;
+        overallSummary = validated.overallSummary;
+        improvedPost = validated.improvedPost || ruleImproveMeta.text;
+        rationale = validated.rationale.length ? validated.rationale : ruleRationale;
+        usedAi = true;
+        report.innerHTML = '<div class="ok">健診完成（AI 語意評分）。</div>'
+          + (validated.missing.length ? '<div class="warn">' + validated.missing.join('、') + ' 未取得有效 AI 結果，已改用規則式評分。</div>' : '');
+      }catch(err){
+        var msg = err.name === 'TimeoutError' ? '請求逾時（180秒）' : err.message;
+        report.innerHTML = '<div class="bad">AI 健診失敗：' + escapeHtml(msg) + '，已改用規則式健診。</div>';
+      }
+    } else {
+      report.innerHTML = '<div class="warn">未填 API 金鑰，已使用規則式引擎完成基礎健診（字數/CTA/hashtag/濫用字詞等檢查），如需更精準的語意評分與改寫，請於下方設定金鑰。</div>';
+    }
+
+    renderResult(finalDims, improvedPost, rationale, overallSummary, usedAi, platformKey);
+    btn.disabled = false;
+    $('inputCard').classList.remove('scanning');
+  });
+
+  $('copyImprovedBtn').addEventListener('click', function(){
+    copyText($('improvedText').value);
+  });
+  function copyText(text){
+    if(!text){ showToast('沒有內容可以複製'); return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showToast('已複製到剪貼簿'); }).catch(function(){ fallbackCopy(text); });
+    } else { fallbackCopy(text); }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); showToast('已複製到剪貼簿'); }
+    catch(e){ showToast('複製失敗，請手動選取文字'); }
+    document.body.removeChild(ta);
+  }
+
+  /* ================= 初始化 ================= */
+  function init(){
+    initExamples();
+    initAiPanel();
+    var draft = loadDraft();
+    if(draft){
+      $('postInput').value = draft.text || '';
+      state.platform = draft.platform || 'general';
+      $('purposeSelect').value = draft.purpose || '';
+      $('purposeCustomInput').value = draft.purposeCustom || '';
+      $('audienceSelect').value = draft.audience || '';
+      $('audienceCustomInput').value = draft.audienceCustom || '';
+    }
+    syncPurposeCustomVisibility();
+    syncAudienceCustomVisibility();
+    renderPlatformPills();
+  }
+  init();
+})();
+</script>
+
+<script>
+/* ================= 頂部跑馬燈（獨立運作，跟主程式邏輯無關） ================= */
+(function () {
+  'use strict';
+  var MARQUEE_CHECK_URL = "https://script.google.com/macros/s/AKfycbwKX0DNNbY8y4nf90BFTHtxgfqJcHHcZasRrgycl4QAe52_hkjMWSkYk4xOsqU-JPCROw/exec";
+  var STORAGE_KEY = 'postGraderMarquee';
+  var REFRESH_MS = 20 * 60 * 1000;
+
+  var bar = document.getElementById('marqueeBar');
+  var track = document.getElementById('marqueeTrack');
+  var lastKey = null;
+
+  function loadCache() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveCache(items) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
+  }
+  function appendParsedText(container, text) {
+    var re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > lastIndex) container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      var a = document.createElement('a');
+      a.href = m[2]; a.textContent = m[1]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.style.color = 'inherit'; a.style.textDecoration = 'underline';
+      container.appendChild(a);
+      lastIndex = re.lastIndex;
+    }
+    if (lastIndex < text.length) container.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+  function buildTrackContent(items) {
+    var frag = document.createDocumentFragment();
+    function appendPass() {
+      items.forEach(function (item, idx) {
+        if (idx > 0) frag.appendChild(document.createTextNode('　★　'));
+        appendParsedText(frag, item);
+      });
+    }
+    appendPass();
+    frag.appendChild(document.createTextNode('　★　'));
+    appendPass();
+    return frag;
+  }
+  function render(items) {
+    if (!items || !items.length) return;
+    var key = JSON.stringify(items);
+    if (key === lastKey) return;
+    lastKey = key;
+    track.innerHTML = '';
+    track.appendChild(buildTrackContent(items));
+    bar.classList.add('show');
+    document.body.classList.add('has-marquee');
+    var width = track.scrollWidth / 2;
+    track.style.animationDuration = Math.max(width / 80, 10) + 's';
+  }
+  function fetchMarquee() {
+    fetch(MARQUEE_CHECK_URL, { method: 'POST', body: JSON.stringify({ serial: '' }) })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && Array.isArray(data.marquee) && data.marquee.length) {
+          saveCache(data.marquee);
+          render(data.marquee);
+        }
+      })
+      .catch(function () {});
+  }
+
+  render(loadCache());
+  fetchMarquee();
+  setInterval(fetchMarquee, REFRESH_MS);
+})();
+</script>
+
+<script>
+/* ================= PWA 加入主畫面（獨立運作，跟上方主程式邏輯無關） ================= */
+(function () {
+  'use strict';
+  var deferredPrompt = null;
+  var btn = document.getElementById('installBtn');
+
+  var ua = navigator.userAgent || '';
+  var isIOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isMacDesktop = /Macintosh/.test(ua) && !isIOSDevice;
+  var isSafariEngine = /^((?!chrome|crios|fxios|edgios|android).)*safari/i.test(ua);
+  var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+
+  function fallbackMessage() {
+    if (isIOSDevice) return '請點畫面上的「分享」圖示，選「加入主畫面」';
+    if (isMacDesktop && isSafariEngine) return '請用選單列「檔案」→「加入 Dock」（Safari 17 以上）';
+    return '目前瀏覽器不支援安裝，或已安裝過';
+  }
+
+  function notify(msg) {
+    var t = document.getElementById('toast');
+    if (!t) { window.alert(msg); return; }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(notify._timer);
+    notify._timer = setTimeout(function () { t.classList.remove('show'); }, 2400);
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredPrompt = e; });
+  window.addEventListener('appinstalled', function () { deferredPrompt = null; });
+
+  if (btn) {
+    if (isStandalone) { btn.style.display = 'none'; }
+    else {
+      btn.addEventListener('click', function () {
+        if (!deferredPrompt) { notify(fallbackMessage()); return; }
+        try { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function () { deferredPrompt = null; }); }
+        catch (e) { notify(fallbackMessage()); }
+      });
+    }
+  }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('service-worker.js').catch(function () {}); });
+  }
+})();
+</script>
+
+</body>
+</html>
