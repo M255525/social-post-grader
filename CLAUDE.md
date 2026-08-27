@@ -87,4 +87,4 @@ Facebook／Instagram／X／Threads／通用五種，各自定義 `charMin`/`char
 
 ## 部署
 
-尚未推送公開 GitHub repo / 開啟 GitHub Pages（`.github/workflows/deploy-pages.yml` 已就緒，比照 `workspace-git-repos` 記載的「不要用 legacy branch-source」慣例，需要上線時直接用）。頁尾已加訪客次數計數器（`visitor-badge.laobi.icu`，`page_id=m255525.socialpostgrader`）。
+已推公開 GitHub repo：<https://github.com/M255525/social-post-grader>，已用 `.github/workflows/deploy-pages.yml`（Actions 部署模式，`gh api repos/M255525/social-post-grader/pages -f build_type=workflow` 啟用，比照 `workspace-git-repos` 記載的「不要用 legacy branch-source」慣例）啟用 GitHub Pages：<https://m255525.github.io/social-post-grader/>（2026-08-27 上線，已用 Playwright 對正式網址驗證頁面正常渲染）。頁尾已加訪客次數計數器（`visitor-badge.laobi.icu`，`page_id=m255525.socialpostgrader`）。
